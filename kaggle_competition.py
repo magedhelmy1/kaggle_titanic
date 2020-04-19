@@ -70,4 +70,4 @@ df.isna().sum()
 
 cleaned_df = df.dropna(subset=['Age'])
 cleaned_df.isna().sum()
-
+# Switching rep
