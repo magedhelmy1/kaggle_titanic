@@ -1,7 +1,5 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 original_df = pd.read_csv("train.csv")
 test_data = pd.read_csv("test.csv")
@@ -21,33 +19,11 @@ df.isna().sum()
 
 df.describe()
 # For embarkment, I gave them C since it had the highest rate of survival females with class 1
-# df[(df.Survived == 1) & (df.Embarked == "C") & (df.Pclass == 1) & (df.Sex == "female")]
+
 
 df["Embarked"] = df["Embarked"].fillna(value="C")
 
-# Some plots
-#df.Survived.value_counts(normalize=True).plot(kind="bar", alpha=0.5)  ## Setting alpha as per transparency
-#plt.show()
-
-# Info on survival
-#sum(df.Survived.value_counts())
-
-# when an empty age column column has these values, give it this value:
-# df[['Pclass',"Embarked", 'Survived']].groupby(['Pclass'], as_index=False).mean().sort_values(by='Survived', ascending=False)
-
-# for a in np.unique(df.Survived):
-#     for b in np.unique(df.Pclass):
-#         for c in np.unique(df.Sex):
-#             for d in np.unique(df.SibSp):
-#                 for e in np.unique(df.Parch):
-#                     for f in np.unique(df.Embarked):
-#                         mean_value = df[(df["Survived"] == a) & (df["Pclass"] == b) & (df["Sex"] == c)
-#                                         & (df["SibSp"] == d) & (df["Parch"] == e) & (df["Embarked"] == f)].Age.mean()
-#
-#                         df = df.assign(Age=np.where(df.Survived.eq(a) & df.Pclass.eq(b) & df.Sex.eq(c) & df.SibSp.eq(d) &
-#                                                     df.Parch.eq(e) & df.Embarked.eq(f) & df.Age.isnull(), mean_value, df.Age))
-
-#Cleaner way to do the above:
+# Cleaner way to do the above:
 l_col = ['Survived','Pclass','Sex','Embarked','SibSp','Parch']
 df['Age'] = df['Age'].fillna(df.groupby(l_col)['Age'].transform('mean'))
 
@@ -70,4 +46,29 @@ df.isna().sum()
 
 cleaned_df = df.dropna(subset=['Age'])
 cleaned_df.isna().sum()
-# Switching rep
+
+cleaned_df['Sex'] = cleaned_df['Sex'].map({'female': 1, 'male': 0}).astype(int)
+
+enbarked_one_hot = pd.get_dummies(cleaned_df['Embarked'], prefix='Embarked')
+cleaned_df = cleaned_df.drop('Embarked', axis=1)
+cleaned_df = cleaned_df.join(enbarked_one_hot)
+
+x_train = cleaned_df.drop('Survived', axis=1)
+y_train = cleaned_df["Survived"].values
+
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+model = Sequential([
+    Dense(10, activation="relu", input_dim=x_train.shape[1]),
+    Dense(1, activation="sigmoid")
+
+])
+
+model.compile(loss="binary_crossentropy",
+              optimizer="adam",
+              metrics=["accuracy"])
+
+model.fit(x_train, y_train, epochs=2000)
+
